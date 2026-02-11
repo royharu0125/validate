@@ -1,4 +1,5 @@
-# validator.py
+"""Validator module for user age data."""
+
 
 def validate_users(users, min_age=1, max_age=120):
     """
@@ -15,6 +16,7 @@ def validate_users(users, min_age=1, max_age=120):
           "invalid_count": <不合法筆數>,
           "invalid_users": [
               {"id": <id>, "reason": "missing_age"},
+              {"id": <id>, "reason": "age_invalid_type"},
               {"id": <id>, "reason": "age_out_of_range"},
           ]
         }
@@ -22,39 +24,30 @@ def validate_users(users, min_age=1, max_age=120):
     total = len(users)
     invalid_users = []
 
-    for u in users:
+    for user in users:
         # 1) id 防呆
-        user_id = u.get("id", None)
+        user_id = user.get("id", None)
 
         # 2) 缺 age
-        if "age" not in u:
-            invalid_users.append({
-                "id": user_id,
-                "reason": "missing_age"
-            })
-            continue 
+        if "age" not in user:
+            invalid_users.append({"id": user_id, "reason": "missing_age"})
+            continue
 
-        age = u["age"]
+        age = user["age"]
 
-        # 3) age 不是數字（例如 "20" / None / "abc"）也視為不合法
-        if not isinstance(age, int):
-            invalid_users.append({
-                "id": user_id,
-                "reason": "age_out_of_range"
-            })
+        # 3) age 型別需為 int，且不接受 bool
+        if isinstance(age, bool) or not isinstance(age, int):
+            invalid_users.append({"id": user_id, "reason": "age_invalid_type"})
             continue
 
         # 4) age 超出範圍
         if age < min_age or age > max_age:
-            invalid_users.append({
-                "id": user_id,
-                "reason": "age_out_of_range"
-            })
+            invalid_users.append({"id": user_id, "reason": "age_out_of_range"})
 
     return {
         "total": total,
         "invalid_count": len(invalid_users),
-        "invalid_users": invalid_users
+        "invalid_users": invalid_users,
     }
 
 
@@ -66,8 +59,9 @@ if __name__ == "__main__":
         {"id": 3, "age": -5},
         {"id": 4, "age": 200},
         {"id": 5, "age": 30},
-        {"id": 6, "age": "20"},   # 故意放字串測試
-        {"age": 10},              # 故意缺 id 測試
+        {"id": 6, "age": "20"},  # 故意放字串測試
+        {"age": 10},  # 故意缺 id 測試
+        {"id": 7, "age": True},  # 故意放 bool 測試
     ]
 
     result = validate_users(users)
